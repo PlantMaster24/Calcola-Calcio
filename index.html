@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        /* Aggiungi qui il tuo stile personalizzato */
         body {
             font-family: Arial, sans-serif;
             background-color: #f1f1f1;
@@ -53,7 +52,6 @@
             height: 250px;
         }
 
-        /* Stile per i risultati */
         .result {
             background-color: white;
             padding: 15px;
@@ -65,7 +63,6 @@
 <body>
     <h1>Diario Alimentare</h1>
 
-    <!-- Modulo per aggiungere un alimento al database -->
     <div>
         <h2>Aggiungi Alimento al Database</h2>
         <label for="newFoodName">Nome Alimento:</label>
@@ -74,7 +71,7 @@
         <label for="newFoodCalcium">Calcio (mg per 100g/ml):</label>
         <input type="number" id="newFoodCalcium" placeholder="Es. 120">
         
-        <label for="newFoodSodium">Sodio (g per 100g/ml):</label>
+        <label for="newFoodSodium">Sodio (g per 100g/ml, se non acqua):</label>
         <input type="number" id="newFoodSodium" placeholder="Es. 0.1">
         
         <label for="newFoodMarca">Marca:</label>
@@ -83,7 +80,6 @@
         <button id="addFoodButton">Aggiungi Alimento</button>
     </div>
 
-    <!-- Form di ricerca e altri elementi già presenti -->
     <div>
         <label for="foodInput">Cerca Alimento:</label>
         <input type="text" id="foodInput" placeholder="Es. Latte, Parmigiano">
@@ -108,22 +104,20 @@
     <h2>Storico Diario Alimentare</h2>
     <ul id="diaryList"></ul>
 
-    <!-- Canvas per il grafico -->
     <h2>Grafico dei Progressi</h2>
     <canvas id="myChart"></canvas>
 
     <script>
         // Database alimenti italiani (esempio semplificato)
         let foodDB = [
-            { name: "latte scremato esselunga", calcio: 120, sodio: 0.1, marca: "Esselunga" },  // 0.1g di sodio
-            { name: "latte intero", calcio: 120, sodio: 0.1, marca: "Esselunga" },  // 0.1g di sodio
-            { name: "acqua lete", calcio: 305, sodio: 0.005, marca: "Lete" },  // 5mg di sodio (per litro)
-            { name: "ferrarelle", calcio: 400, sodio: 0.05, marca: "Ferrarelle" },  // 50mg di sodio (per litro)
-            { name: "parmigiano reggiano", calcio: 1184, sodio: 1.5, marca: "Parmalat" },  // 1.5g di sodio
-            { name: "grana padano", calcio: 1160, sodio: 1.4, marca: "Grana Padano" },  // 1.4g di sodio
-            { name: "mozzarella", calcio: 500, sodio: 0.4, marca: "Galbani" },  // 0.4g di sodio
-            { name: "pane bianco", calcio: 60, sodio: 1.2, marca: "Panificio" },  // 1.2g di sodio
-            // Aggiungi altri alimenti se necessario...
+            { name: "latte scremato esselunga", calcio: 120, sodio: 0.1, marca: "Esselunga", isWater: false },
+            { name: "latte intero", calcio: 120, sodio: 0.1, marca: "Esselunga", isWater: false },
+            { name: "acqua lete", calcio: 305, sodio: 5, marca: "Lete", isWater: true },  // 5mg sodio per litro
+            { name: "ferrarelle", calcio: 400, sodio: 50, marca: "Ferrarelle", isWater: true },  // 50mg sodio per litro
+            { name: "parmigiano reggiano", calcio: 1184, sodio: 1.5, marca: "Parmalat", isWater: false },
+            { name: "grana padano", calcio: 1160, sodio: 1.4, marca: "Grana Padano", isWater: false },
+            { name: "mozzarella", calcio: 500, sodio: 0.4, marca: "Galbani", isWater: false },
+            { name: "pane bianco", calcio: 60, sodio: 1.2, marca: "Panificio", isWater: false }
         ];
 
         // Funzione per aggiungere un alimento al database
@@ -139,7 +133,8 @@
                     name: name,
                     calcio: calcium,
                     sodio: sodium,
-                    marca: marca
+                    marca: marca,
+                    isWater: false // Imposta come falso per gli alimenti, aggiungi logica se necessario per l'acqua
                 });
                 alert('Alimento aggiunto al database!');
                 
@@ -172,20 +167,25 @@
 
             if (result.length > 0) {
                 const foodItem = result[0]; // Prendi il primo risultato
-                displayFood(foodItem);
+                displayFood(foodItem, quantity);
             } else {
                 resultDiv.textContent = "Alimento non trovato nel database.";
             }
         }
 
-        function displayFood(foodItem) {
+        function displayFood(foodItem, quantity) {
             const resultDiv = document.getElementById('result');
+            const quantityCalcium = foodItem.calcio * (quantity / 100); // Calcio in base alla quantità
+            const quantitySodium = foodItem.sodio * (quantity / 100); // Sodio in base alla quantità
+
+            // Se è acqua, il sodio è in milligrammi (mg), altrimenti è in grammi (g)
+            const sodiumUnit = foodItem.isWater ? 'mg' : 'g';
             resultDiv.innerHTML = `
                 <h3>Risultato Trovato:</h3>
                 <p><strong>Nome:</strong> ${foodItem.name}</p>
                 <p><strong>Marca:</strong> ${foodItem.marca}</p>
-                <p><strong>Calcio:</strong> ${foodItem.calcio} mg</p>
-                <p><strong>Sodio:</strong> ${foodItem.sodio} g</p>  <!-- Il sodio è ora in grammi -->
+                <p><strong>Calcio:</strong> ${quantityCalcium.toFixed(2)} mg</p>
+                <p><strong>Sodio:</strong> ${quantitySodium.toFixed(2)} ${sodiumUnit}</p>
             `;
         }
 
