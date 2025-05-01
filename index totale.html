@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario Alimentare</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1, h2 {
+      color: #3b5998;
+      text-align: center;
+    }
+
+    input, button {
+      padding: 8px;
+      margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      background-color: #5c6bc0;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3949ab;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .result, .totals {
+      background: white;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    canvas {
+      display: block;
+      margin: 20px auto;
+      max-width: 300px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Diario Alimentare</h1>
+
+    <h2>Aggiungi Alimento al Database</h2>
+    <label for="newFoodName">Nome Alimento:</label>
+    <input type="text" id="newFoodName" placeholder="Es. Latte scremato Esselunga">
+
+    <label for="newFoodCalcium">Calcio (mg per 100g o 100ml, o per litro se acqua):</label>
+    <input type="number" id="newFoodCalcium">
+
+    <label for="newFoodSodium">Sodio (mg per 100g o ml, o per litro se acqua):</label>
+    <input type="number" id="newFoodSodium">
+
+    <label for="newFoodMarca">Marca:</label>
+    <input type="text" id="newFoodMarca">
+
+    <label for="newFoodTipo">Tipo (standard o acqua):</label>
+    <input type="text" id="newFoodTipo" placeholder="standard / acqua">
+
+    <button id="addFoodButton">Aggiungi Alimento</button>
+
+    <hr>
+
+    <label for="foodInput">Cerca Alimento:</label>
+    <input type="text" id="foodInput" placeholder="Es. Latte">
+
+    <label for="quantityInput">Quantità (in grammi o ml):</label>
+    <input type="number" id="quantityInput" placeholder="100">
+
+    <button onclick="searchFood()">Cerca</button>
+    <button onclick="addToDiary()">Aggiungi al Diario</button>
+
+    <div id="result" class="result"></div>
+
+    <div id="totals" class="totals">
+      <p><strong>Totale Calcio di Oggi:</strong> <span id="dailyTotalCalcium">0</span> mg (Obiettivo: 1000 mg)</p>
+      <p><strong>Totale Sodio di Oggi:</strong> <span id="dailyTotalSodium">0</span> mg</p>
+    </div>
+
+    <h2>Progresso Calcio</h2>
+    <canvas id="calciumChart"></canvas>
+
+    <h2>Storico Diario Alimentare</h2>
+    <ul id="diaryList"></ul>
+  </div>
+
+  <script>
+    let foodDB = [
+      { name: "latte scremato esselunga", calcio: 120, sodio: 100, marca: "Esselunga", tipo: "standard" },
+      { name: "latte intero esselunga", calcio: 120, sodio: 100, marca: "Esselunga", tipo: "standard" },
+      { name: "acqua lete", calcio: 305, sodio: 5, marca: "Lete", tipo: "acqua" },
+      { name: "ferrarelle", calcio: 400, sodio: 50, marca: "Ferrarelle", tipo: "acqua" }
+    ];
+
+    document.getElementById('addFoodButton').addEventListener('click', () => {
+      const name = document.getElementById('newFoodName').value.trim().toLowerCase();
+      const calcium = parseFloat(document.getElementById('newFoodCalcium').value);
+      const sodium = parseFloat(document.getElementById('newFoodSodium').value);
+      const marca = document.getElementById('newFoodMarca').value.trim();
+      const tipo = document.getElementById('newFoodTipo').value.trim().toLowerCase() || "standard";
+
+      if (name && !isNaN(calcium) && !isNaN(sodium) && marca) {
+        foodDB.push({ name, calcio: calcium, sodio: sodium, marca, tipo });
+        alert("Alimento aggiunto!");
+        document.getElementById('newFoodName').value = '';
+        document.getElementById('newFoodCalcium').value = '';
+        document.getElementById('newFoodSodium').value = '';
+        document.getElementById('newFoodMarca').value = '';
+        document.getElementById('newFoodTipo').value = '';
+      }
+    });
+
+    function searchFood() {
+      const term = document.getElementById('foodInput').value.toLowerCase();
+      const quantity = parseFloat(document.getElementById('quantityInput').value);
+      const resultDiv = document.getElementById('result');
+
+      if (!term || isNaN(quantity)) {
+        resultDiv.textContent = "Inserisci alimento e quantità valida.";
+        return;
+      }
+
+      const found = foodDB.find(f => f.name.includes(term));
+      if (!found) {
+        resultDiv.textContent = "Alimento non trovato.";
+        return;
+      }
+
+      const factor = found.tipo === "acqua" ? 1000 : 100;
+      const calcio = ((found.calcio / factor) * quantity).toFixed(1);
+      const sodio = ((found.sodio / factor) * quantity).toFixed(1);
+
+      resultDiv.innerHTML = `
+        <h3>${found.name}</h3>
+        <p>Marca: ${found.marca}</p>
+        <p>Quantità: ${quantity} ml/g</p>
+        <p>Calcio stimato: ${calcio} mg</p>
+        <p>Sodio stimato: ${sodio} mg</p>
+        <p><em>Valori riferiti a ${found.tipo === "acqua" ? "1000 ml" : "100 g/ml"}</em></p>
+      `;
+
+      window.lastSearchedFood = found;
+      window.lastQuantity = quantity;
+    }
+
+    function addToDiary() {
+      const food = window.lastSearchedFood;
+      const quantity = window.lastQuantity;
+      if (!food || !quantity) return;
+
+      const today = new Date().toDateString();
+      let diary = JSON.parse(localStorage.getItem('diaryData')) || {};
+      if (!diary[today]) diary[today] = [];
+
+      diary[today].push({ ...food, quantity });
+      localStorage.setItem('diaryData', JSON.stringify(diary));
+      updateDiary();
+    }
+
+    function updateDiary() {
+      const diaryList = document.getElementById('diaryList');
+      const totalCa = document.getElementById('dailyTotalCalcium');
+      const totalNa = document.getElementById('dailyTotalSodium');
+      const chart = window.calciumChart;
+
+      diaryList.innerHTML = '';
+      const today = new Date().toDateString();
+      const diary = JSON.parse(localStorage.getItem('diaryData')) || {};
+      const todayEntries = diary[today] || [];
+
+      let calcioTot = 0, sodioTot = 0;
+
+      todayEntries.forEach(entry => {
+        const factor = entry.tipo === "acqua" ? 1000 : 100;
+        const calcio = (entry.calcio / factor) * entry.quantity;
+        const sodio = (entry.sodio / factor) * entry.quantity;
+        calcioTot += calcio;
+        sodioTot += sodio;
+
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${entry.name}</strong>: ${entry.quantity} ml/g – Calcio: ${calcio.toFixed(1)} mg, Sodio: ${sodio.toFixed(1)} mg`;
+        diaryList.appendChild(li);
+      });
+
+      totalCa.textContent = calcioTot.toFixed(1);
+      totalNa.textContent = sodioTot.toFixed(1);
+
+      if (chart) {
+        chart.data.datasets[0].data = [calcioTot, 1000 - calcioTot > 0 ? 1000 - calcioTot : 0];
+        chart.update();
+      }
+    }
+
+    function setupChart() {
+      const ctx = document.getElementById('calciumChart').getContext('2d');
+      window.calciumChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Calcio', 'Rimanente'],
+          datasets: [{
+            data: [0, 1000],
+            backgroundColor: ['#64b5f6', '#cfd8dc']
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.label + ': ' + ctx.raw.toFixed(1) + ' mg';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    window.onload = () => {
+      setupChart();
+      updateDiary();
+    };
+  </script>
+</body>
+</html>
